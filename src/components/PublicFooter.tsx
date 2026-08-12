@@ -153,6 +153,7 @@ export const PublicFooter = () => {
               <FooterLink to="/">Home</FooterLink>
               <FooterAnchor href="/#features">Features</FooterAnchor>
               <FooterAnchor href="/#how-it-works">How It Works</FooterAnchor>
+              <FooterAnchor href="/#pricing">Pricing</FooterAnchor>
               <FooterAnchor href="/#faq">FAQ</FooterAnchor>
               <FooterAnchor href="/#contact">Contact</FooterAnchor>
             </LinkList>
@@ -173,7 +174,7 @@ export const PublicFooter = () => {
                 <MailOutlined />
                 <FooterAnchor href="mailto:support@jtparlour.com">support@jtparlour.com</FooterAnchor>
               </ContactRow>
-              <FooterLink to="/signup">Onboard your salon</FooterLink>
+              <FooterAnchor href="/#pricing">Onboard your salon</FooterAnchor>
             </LinkList>
           </div>
         </Grid>

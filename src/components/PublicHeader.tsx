@@ -170,12 +170,13 @@ export const PublicHeader = () => {
         <Nav>
           <NavLink href="/#features">Features</NavLink>
           <NavLink href="/#how-it-works">How It Works</NavLink>
+          <NavLink href="/#pricing">Pricing</NavLink>
           <NavLink href="/#faq">FAQ</NavLink>
           <NavLink href="/#contact">Contact</NavLink>
         </Nav>
 
         <Actions>
-          <GoldButton to="/signup">Onboard Your Salon</GoldButton>
+          <GoldButton to="/#pricing">Onboard Your Salon</GoldButton>
         </Actions>
 
         <MobileToggle onClick={() => setMobileOpen((v) => !v)} aria-label="Toggle menu">
@@ -186,10 +187,11 @@ export const PublicHeader = () => {
       <MobilePanel $open={mobileOpen}>
         <MobileNavLink href="/#features" onClick={closeMobile}>Features</MobileNavLink>
         <MobileNavLink href="/#how-it-works" onClick={closeMobile}>How It Works</MobileNavLink>
+        <MobileNavLink href="/#pricing" onClick={closeMobile}>Pricing</MobileNavLink>
         <MobileNavLink href="/#faq" onClick={closeMobile}>FAQ</MobileNavLink>
         <MobileNavLink href="/#contact" onClick={closeMobile}>Contact</MobileNavLink>
         <MobileActions>
-          <MobileGoldButton to="/signup" onClick={closeMobile}>Onboard Your Salon</MobileGoldButton>
+          <MobileGoldButton to="/#pricing" onClick={closeMobile}>Onboard Your Salon</MobileGoldButton>
         </MobileActions>
       </MobilePanel>
     </Bar>
