@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import {
   TeamOutlined,
@@ -13,11 +13,14 @@ import {
   MailOutlined,
   ArrowRightOutlined,
   CheckCircleFilled,
+  CheckOutlined,
 } from '@ant-design/icons';
 import styled from 'styled-components';
 import { PublicHeader } from '../components/PublicHeader';
 import { PublicFooter } from '../components/PublicFooter';
 import { Faq } from '../components/Faq';
+import { OnboardSalonModal } from '../components/OnboardSalonModal';
+import { planService, type Plan } from '../api/planService';
 
 const Page = styled.div`
   background: #f8fafc;
@@ -298,6 +301,130 @@ const STEPS = [
   },
 ];
 
+/* ---------- Pricing ---------- */
+const PricingGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  align-items: stretch;
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+    max-width: 380px;
+    margin: 0 auto;
+  }
+`;
+
+const PlanCard = styled.div<{ $highlight?: boolean }>`
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: ${(props) => (props.$highlight ? 'linear-gradient(160deg, #1e293b 0%, #0f172a 100%)' : '#ffffff')};
+  border: 1px solid ${(props) => (props.$highlight ? '#334155' : '#e2e8f0')};
+  border-radius: 20px;
+  padding: 32px 28px;
+  ${(props) => props.$highlight && 'transform: scale(1.03); box-shadow: 0 20px 40px rgba(15, 23, 42, 0.25);'}
+`;
+
+const PlanBadge = styled.div`
+  position: absolute;
+  top: -13px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 5px 14px;
+  border-radius: 999px;
+  white-space: nowrap;
+`;
+
+const PlanName = styled.h3<{ $highlight?: boolean }>`
+  font-size: 15px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: ${(props) => (props.$highlight ? '#fbbf24' : '#d97706')};
+  margin: 0 0 12px;
+`;
+
+const PlanPrice = styled.div<{ $highlight?: boolean }>`
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-bottom: 6px;
+
+  span:first-child {
+    font-size: 38px;
+    font-weight: 800;
+    color: ${(props) => (props.$highlight ? '#ffffff' : '#0f172a')};
+    letter-spacing: -1px;
+  }
+  span:last-child {
+    font-size: 13px;
+    color: ${(props) => (props.$highlight ? '#94a3b8' : '#64748b')};
+  }
+`;
+
+const PlanTagline = styled.p<{ $highlight?: boolean }>`
+  font-size: 13px;
+  color: ${(props) => (props.$highlight ? '#cbd5e1' : '#64748b')};
+  margin: 0 0 24px;
+  line-height: 1.5;
+`;
+
+const PlanFeatureList = styled.ul<{ $highlight?: boolean }>`
+  list-style: none;
+  margin: 0 0 28px;
+  padding: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+
+  li {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    font-size: 13.5px;
+    color: ${(props) => (props.$highlight ? '#e2e8f0' : '#334155')};
+    line-height: 1.4;
+  }
+
+  .anticon {
+    color: #22c55e;
+    margin-top: 2px;
+    flex-shrink: 0;
+  }
+`;
+
+const PlanButton = styled.button<{ $highlight?: boolean }>`
+  border: none;
+  border-radius: 10px;
+  padding: 13px 20px;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: ${(props) => (props.$highlight ? 'linear-gradient(135deg, #d97706 0%, #b45309 100%)' : '#0f172a')};
+  color: #ffffff;
+
+  &:hover {
+    transform: translateY(-1px);
+    opacity: 0.92;
+  }
+`;
+
+const PricingLoading = styled.div`
+  text-align: center;
+  padding: 40px;
+  color: #64748b;
+  font-size: 14px;
+`;
+
 /* ---------- FAQ data ---------- */
 const FAQ_ITEMS = [
   { q: 'What documents do I need to onboard my salon?', a: 'Four government documents: Aadhaar Card, PAN Card, Shop & Establishment Registration, and GST or Udyam/MSME Registration. All four are required to register as a new owner.' },
@@ -358,6 +485,9 @@ const ContactEmail = styled.a`
 
 export const LandingPage = () => {
   const location = useLocation();
+  const [modalPlan, setModalPlan] = useState<Plan | null>(null);
+  const [plans, setPlans] = useState<Plan[]>([]);
+  const [plansLoading, setPlansLoading] = useState(true);
 
   // React Router doesn't auto-scroll to a hash on navigation.
   useEffect(() => {
@@ -365,6 +495,10 @@ export const LandingPage = () => {
     const el = document.querySelector(location.hash);
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, [location.hash]);
+
+  useEffect(() => {
+    planService.listPublic().then(setPlans).finally(() => setPlansLoading(false));
+  }, []);
 
   return (
     <Page>
@@ -378,7 +512,7 @@ export const LandingPage = () => {
           so you can spend less time on spreadsheets and more time on your clients.
         </HeroSubtitle>
         <HeroActions>
-          <PrimaryBtn to="/signup">
+          <PrimaryBtn to="/#pricing">
             Onboard Your Salon <ArrowRightOutlined />
           </PrimaryBtn>
         </HeroActions>
@@ -427,7 +561,44 @@ export const LandingPage = () => {
         </SectionInner>
       </Section>
 
-      <Section id="faq" $tint>
+      <Section id="pricing" $tint>
+        <SectionInner>
+          <SectionHeader>
+            <SectionKicker>Pricing</SectionKicker>
+            <SectionTitle>Choose your plan to get started</SectionTitle>
+            <SectionSubtitle>Pick the tier that fits your salon — you'll register right after.</SectionSubtitle>
+          </SectionHeader>
+          {plansLoading ? (
+            <PricingLoading>Loading plans…</PricingLoading>
+          ) : plans.length === 0 ? (
+            <PricingLoading>No plans are available right now — check back soon.</PricingLoading>
+          ) : (
+            <PricingGrid>
+              {plans.map((plan) => (
+                <PlanCard key={plan.id} $highlight={plan.highlighted}>
+                  {plan.highlighted && <PlanBadge>Most Popular</PlanBadge>}
+                  <PlanName $highlight={plan.highlighted}>{plan.name}</PlanName>
+                  <PlanPrice $highlight={plan.highlighted}>
+                    <span>${plan.price.toFixed(0)}</span>
+                    <span>/ salon / month</span>
+                  </PlanPrice>
+                  <PlanTagline $highlight={plan.highlighted}>{plan.tagline}</PlanTagline>
+                  <PlanFeatureList $highlight={plan.highlighted}>
+                    {plan.features.map((f) => (
+                      <li key={f}><CheckOutlined /> {f}</li>
+                    ))}
+                  </PlanFeatureList>
+                  <PlanButton $highlight={plan.highlighted} onClick={() => setModalPlan(plan)}>
+                    Choose {plan.name}
+                  </PlanButton>
+                </PlanCard>
+              ))}
+            </PricingGrid>
+          )}
+        </SectionInner>
+      </Section>
+
+      <Section id="faq">
         <SectionInner style={{ maxWidth: 760 }}>
           <SectionHeader>
             <SectionKicker>FAQ</SectionKicker>
@@ -450,12 +621,14 @@ export const LandingPage = () => {
                 <MailOutlined /> support@jtparlour.com
               </ContactEmail>
             </ContactText>
-            <PrimaryBtn to="/signup">Onboard Your Salon</PrimaryBtn>
+            <PrimaryBtn to="/#pricing">Onboard Your Salon</PrimaryBtn>
           </ContactCard>
         </SectionInner>
       </Section>
 
       <PublicFooter />
+
+      <OnboardSalonModal open={!!modalPlan} plan={modalPlan} onClose={() => setModalPlan(null)} />
     </Page>
   );
 };

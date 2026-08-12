@@ -1,34 +1,15 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Form, DatePicker, Upload } from 'antd';
+import { Modal, Form, DatePicker, Upload, Space } from 'antd';
 import type { UploadFile } from 'antd/es/upload/interface';
 import { UploadOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import styled from 'styled-components';
 import dayjs from 'dayjs';
-import { Input } from '../components/Input';
-import { Button } from '../components/Button';
-import { LocationPicker } from '../components/LocationPicker';
-import type { LocationValue } from '../components/LocationPicker';
+import { Input } from './Input';
+import { Button } from './Button';
+import { LocationPicker } from './LocationPicker';
+import type { LocationValue } from './LocationPicker';
 import { onboardingService } from '../api/onboardingService';
-import { AuthContainer, AuthCard, AuthCardHeader, AuthCardBody, AuthCardFooter, AuthTitle, AuthSubtitle } from '../components/AuthLayout';
-
-const BackHome = styled(Link)`
-  position: absolute;
-  top: 24px;
-  left: 32px;
-  z-index: 10;
-  color: #ffffff;
-  font-size: 13px;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  opacity: 0.85;
-
-  &:hover {
-    opacity: 1;
-  }
-`;
+import type { Plan } from '../api/planService';
 
 const SectionLabel = styled.h4`
   margin: 24px 0 4px;
@@ -37,6 +18,10 @@ const SectionLabel = styled.h4`
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: #94a3b8;
+
+  &:first-child {
+    margin-top: 4px;
+  }
 `;
 
 const DocRow = styled.div`
@@ -57,6 +42,25 @@ const ErrorBanner = styled.div`
   margin-bottom: 16px;
 `;
 
+const SuccessBody = styled.div`
+  text-align: center;
+  padding: 24px 8px 8px;
+`;
+
+const SuccessTitle = styled.h3`
+  font-size: 20px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 12px 0 8px;
+`;
+
+const SuccessText = styled.p`
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 0 0 20px;
+`;
+
 interface DocField {
   key: 'aadhaarDoc' | 'panDoc' | 'shopEstablishmentDoc' | 'gstUdyamDoc';
   numberField: string;
@@ -71,10 +75,18 @@ const DOC_FIELDS: DocField[] = [
   { key: 'gstUdyamDoc', numberField: 'gstUdyamNumber', label: 'GST or Udyam/MSME Registration', numberPlaceholder: 'Registration number (optional)' },
 ];
 
+interface OnboardSalonModalProps {
+  open: boolean;
+  plan: Plan | null;
+  onClose: () => void;
+}
+
 // Mirrors salonHubFrontend/src/pages/Public/SignUpSalon.tsx field-for-field and submits to the
 // same real backend endpoint (POST /onboarding/signup-salon) — this site's onboarding IS the
-// product's onboarding, not a copy of it.
-export const OnboardSalon = () => {
+// product's onboarding, not a copy of it. Only reachable after a plan is chosen on the Pricing
+// section (see LandingPage.tsx) — `plan` travels with the request so a Super Admin reviewing it
+// knows which SalonFeature toggles to set up once approved.
+export const OnboardSalonModal = ({ open, plan, onClose }: OnboardSalonModalProps) => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -86,7 +98,16 @@ export const OnboardSalon = () => {
     setFiles((prev) => ({ ...prev, [key]: (latest?.originFileObj as File) ?? undefined }));
   };
 
+  const resetAndClose = () => {
+    form.resetFields();
+    setFiles({});
+    setErrorMessage(null);
+    setSubmitted(false);
+    onClose();
+  };
+
   const onFinish = async (values: any) => {
+    if (!plan) return;
     setErrorMessage(null);
     const missing = DOC_FIELDS.filter((f) => !files[f.key]);
     if (missing.length > 0) {
@@ -104,6 +125,7 @@ export const OnboardSalon = () => {
         phone: values.phone || undefined,
         dateOfBirth: values.dateOfBirth.format('YYYY-MM-DD'),
         salonName: values.salonName,
+        planId: plan.id,
         address: values.address || undefined,
         country: location?.country || undefined,
         state: location?.state || undefined,
@@ -127,37 +149,38 @@ export const OnboardSalon = () => {
     }
   };
 
-  if (submitted) {
-    return (
-      <AuthContainer>
-        <BackHome to="/">← Back to home</BackHome>
-        <AuthCard $maxWidth={480}>
-          <div style={{ textAlign: 'center', padding: '40px 32px' }}>
-            <CheckCircleOutlined style={{ fontSize: 40, color: '#15803d', marginBottom: 16 }} />
-            <AuthTitle style={{ fontSize: 22 }}>Request submitted</AuthTitle>
-            <AuthSubtitle style={{ marginBottom: 8 }}>
-              A platform administrator will review your documents. Once approved, we'll email your
-              login details to get started.
-            </AuthSubtitle>
-            <Link to="/">
-              <Button $variant="gold" style={{ marginTop: 8 }}>Back to home</Button>
-            </Link>
-          </div>
-        </AuthCard>
-      </AuthContainer>
-    );
-  }
-
   return (
-    <AuthContainer>
-      <BackHome to="/">← Back to home</BackHome>
-      <AuthCard $maxWidth={560} $scrollable>
-        <AuthCardHeader>
-          <AuthTitle>Register your salon</AuthTitle>
-          <AuthSubtitle>Tell us about you and your salon, and share the documents below to get started.</AuthSubtitle>
-        </AuthCardHeader>
-
-        <AuthCardBody>
+    <Modal
+      open={open}
+      onCancel={resetAndClose}
+      width={620}
+      title={submitted ? undefined : `Register your salon — ${plan?.name ?? ''} Plan`}
+      footer={
+        submitted
+          ? null
+          : (
+            <Space>
+              <Button $variant="secondary" onClick={resetAndClose}>Cancel</Button>
+              <Button $variant="gold" htmlType="submit" form="onboard-salon-form" loading={loading}>
+                Create my salon
+              </Button>
+            </Space>
+          )
+      }
+      destroyOnClose
+    >
+      {submitted ? (
+        <SuccessBody>
+          <CheckCircleOutlined style={{ fontSize: 40, color: '#15803d' }} />
+          <SuccessTitle>Request submitted</SuccessTitle>
+          <SuccessText>
+            A platform administrator will review your documents. Once approved, we'll email your
+            login details to get started.
+          </SuccessText>
+          <Button $variant="gold" onClick={resetAndClose}>Back to home</Button>
+        </SuccessBody>
+      ) : (
+        <div style={{ maxHeight: '65vh', overflowY: 'auto', paddingRight: 4 }}>
           {errorMessage && <ErrorBanner>{errorMessage}</ErrorBanner>}
           <Form id="onboard-salon-form" form={form} layout="vertical" onFinish={onFinish}>
             <SectionLabel>Your details</SectionLabel>
@@ -210,20 +233,8 @@ export const OnboardSalon = () => {
               </DocRow>
             ))}
           </Form>
-        </AuthCardBody>
-
-        <AuthCardFooter>
-          <Button
-            $variant="gold"
-            htmlType="submit"
-            form="onboard-salon-form"
-            loading={loading}
-            style={{ width: '100%', height: 46, fontSize: 16, fontWeight: 600 }}
-          >
-            Create my salon
-          </Button>
-        </AuthCardFooter>
-      </AuthCard>
-    </AuthContainer>
+        </div>
+      )}
+    </Modal>
   );
 };

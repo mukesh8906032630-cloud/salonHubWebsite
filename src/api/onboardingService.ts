@@ -6,6 +6,7 @@ export interface SignupSalonPayload {
   phone?: string;
   dateOfBirth: string; // YYYY-MM-DD
   salonName: string;
+  planId: string;
   address?: string;
   country?: string;
   state?: string;
@@ -39,6 +40,7 @@ export const onboardingService = {
     if (payload.phone) form.append('phone', payload.phone);
     form.append('dateOfBirth', payload.dateOfBirth);
     form.append('salonName', payload.salonName);
+    form.append('planId', payload.planId);
     if (payload.address) form.append('address', payload.address);
     if (payload.country) form.append('country', payload.country);
     if (payload.state) form.append('state', payload.state);
