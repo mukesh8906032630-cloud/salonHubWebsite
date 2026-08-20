@@ -289,7 +289,7 @@ const StepDesc = styled.p`
 const STEPS = [
   {
     title: 'Submit your details',
-    desc: 'Tell us about your salon and yourself, and upload your Aadhaar Card, PAN Card, Shop & Establishment Registration, and GST/Udyam Registration.',
+    desc: 'Tell us about your salon and yourself, and upload one government document — Aadhaar, PAN, Shop & Establishment Registration, or GST/Udyam.',
   },
   {
     title: 'Get verified',
@@ -427,7 +427,7 @@ const PricingLoading = styled.div`
 
 /* ---------- FAQ data ---------- */
 const FAQ_ITEMS = [
-  { q: 'What documents do I need to onboard my salon?', a: 'Four government documents: Aadhaar Card, PAN Card, Shop & Establishment Registration, and GST or Udyam/MSME Registration. All four are required to register as a new owner.' },
+  { q: 'What documents do I need to onboard my salon?', a: 'One of the following: Aadhaar Card, PAN Card, Shop & Establishment Registration, or GST/Udyam/MSME Registration. You only need to provide one — more is fine too.' },
   { q: 'How long does approval take?', a: 'Every submission is reviewed personally by a platform administrator. You’ll receive an email the moment your salon is approved or if anything needs correcting.' },
   { q: 'Can I manage more than one salon branch?', a: 'Yes. Once your first salon is approved, you can add additional branches from your dashboard and switch between them at any time using the salon switcher.' },
   { q: 'How is staff pay calculated?', a: 'You choose per staff member: commission (a flat rate or a custom rate per service), a daily rate, or a fixed monthly salary. Payroll cycles, adjustments, and settlements are all tracked for you automatically.' },
@@ -579,7 +579,7 @@ export const LandingPage = () => {
                   {plan.highlighted && <PlanBadge>Most Popular</PlanBadge>}
                   <PlanName $highlight={plan.highlighted}>{plan.name}</PlanName>
                   <PlanPrice $highlight={plan.highlighted}>
-                    <span>${plan.price.toFixed(0)}</span>
+                    <span>₹{plan.price.toFixed(0)}</span>
                     <span>/ salon / month</span>
                   </PlanPrice>
                   <PlanTagline $highlight={plan.highlighted}>{plan.tagline}</PlanTagline>
