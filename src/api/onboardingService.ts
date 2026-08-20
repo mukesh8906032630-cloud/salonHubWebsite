@@ -17,10 +17,11 @@ export interface SignupSalonPayload {
   panNumber?: string;
   shopEstablishmentNumber?: string;
   gstUdyamNumber?: string;
-  aadhaarDoc: File;
-  panDoc: File;
-  shopEstablishmentDoc: File;
-  gstUdyamDoc: File;
+  // At least one of these 4 is required — enforced by the caller, not by this type.
+  aadhaarDoc?: File;
+  panDoc?: File;
+  shopEstablishmentDoc?: File;
+  gstUdyamDoc?: File;
 }
 
 interface ApiResponse<T> {
@@ -51,10 +52,10 @@ export const onboardingService = {
     if (payload.panNumber) form.append('panNumber', payload.panNumber);
     if (payload.shopEstablishmentNumber) form.append('shopEstablishmentNumber', payload.shopEstablishmentNumber);
     if (payload.gstUdyamNumber) form.append('gstUdyamNumber', payload.gstUdyamNumber);
-    form.append('aadhaarDoc', payload.aadhaarDoc);
-    form.append('panDoc', payload.panDoc);
-    form.append('shopEstablishmentDoc', payload.shopEstablishmentDoc);
-    form.append('gstUdyamDoc', payload.gstUdyamDoc);
+    if (payload.aadhaarDoc) form.append('aadhaarDoc', payload.aadhaarDoc);
+    if (payload.panDoc) form.append('panDoc', payload.panDoc);
+    if (payload.shopEstablishmentDoc) form.append('shopEstablishmentDoc', payload.shopEstablishmentDoc);
+    if (payload.gstUdyamDoc) form.append('gstUdyamDoc', payload.gstUdyamDoc);
 
     const { data } = await apiClient.post<ApiResponse<{ id: string; status: string }>>(
       '/onboarding/signup-salon',

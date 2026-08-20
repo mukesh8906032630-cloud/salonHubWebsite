@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Modal, Form, DatePicker, Upload, Space } from 'antd';
 import type { UploadFile } from 'antd/es/upload/interface';
-import { UploadOutlined, CheckCircleOutlined } from '@ant-design/icons';
+import { UploadOutlined, CheckCircleOutlined, CheckOutlined } from '@ant-design/icons';
 import styled from 'styled-components';
 import dayjs from 'dayjs';
 import { Input } from './Input';
@@ -40,6 +40,46 @@ const ErrorBanner = styled.div`
   padding: 10px 14px;
   font-size: 13px;
   margin-bottom: 16px;
+`;
+
+const PlanSummary = styled.div`
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 4px;
+`;
+
+const PlanSummaryPrice = styled.div`
+  font-weight: 800;
+  color: #d97706;
+  font-size: 20px;
+`;
+
+const PlanFeatureList = styled.ul`
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 8px 0 0;
+  border-top: 1px solid #fde68a;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 4px 12px;
+`;
+
+const PlanFeatureItem = styled.li`
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 12.5px;
+  color: #475569;
+  line-height: 1.3;
+
+  .anticon {
+    color: #15803d;
+    font-size: 11px;
+    margin-top: 2px;
+    flex-shrink: 0;
+  }
 `;
 
 const SuccessBody = styled.div`
@@ -109,9 +149,9 @@ export const OnboardSalonModal = ({ open, plan, onClose }: OnboardSalonModalProp
   const onFinish = async (values: any) => {
     if (!plan) return;
     setErrorMessage(null);
-    const missing = DOC_FIELDS.filter((f) => !files[f.key]);
-    if (missing.length > 0) {
-      setErrorMessage(`Please upload: ${missing.map((f) => f.label).join(', ')}`);
+    const providedDocs = DOC_FIELDS.filter((f) => files[f.key]);
+    if (providedDocs.length === 0) {
+      setErrorMessage('Upload at least one of Aadhaar, PAN, Shop & Establishment, or GST/Udyam.');
       return;
     }
 
@@ -136,10 +176,10 @@ export const OnboardSalonModal = ({ open, plan, onClose }: OnboardSalonModalProp
         panNumber: values.panNumber || undefined,
         shopEstablishmentNumber: values.shopEstablishmentNumber || undefined,
         gstUdyamNumber: values.gstUdyamNumber || undefined,
-        aadhaarDoc: files.aadhaarDoc!,
-        panDoc: files.panDoc!,
-        shopEstablishmentDoc: files.shopEstablishmentDoc!,
-        gstUdyamDoc: files.gstUdyamDoc!,
+        aadhaarDoc: files.aadhaarDoc,
+        panDoc: files.panDoc,
+        shopEstablishmentDoc: files.shopEstablishmentDoc,
+        gstUdyamDoc: files.gstUdyamDoc,
       });
       setSubmitted(true);
     } catch (error: any) {
@@ -153,8 +193,8 @@ export const OnboardSalonModal = ({ open, plan, onClose }: OnboardSalonModalProp
     <Modal
       open={open}
       onCancel={resetAndClose}
-      width={620}
-      title={submitted ? undefined : `Register your salon — ${plan?.name ?? ''} Plan`}
+      width={760}
+      title={submitted ? undefined : `Register as Salon Owner — ${plan?.name ?? ''} Plan`}
       footer={
         submitted
           ? null
@@ -162,7 +202,7 @@ export const OnboardSalonModal = ({ open, plan, onClose }: OnboardSalonModalProp
             <Space>
               <Button $variant="secondary" onClick={resetAndClose}>Cancel</Button>
               <Button $variant="gold" htmlType="submit" form="onboard-salon-form" loading={loading}>
-                Create my salon
+                Register as Owner
               </Button>
             </Space>
           )
@@ -182,6 +222,20 @@ export const OnboardSalonModal = ({ open, plan, onClose }: OnboardSalonModalProp
       ) : (
         <div style={{ maxHeight: '65vh', overflowY: 'auto', paddingRight: 4 }}>
           {errorMessage && <ErrorBanner>{errorMessage}</ErrorBanner>}
+          {plan && (
+            <PlanSummary>
+              <PlanSummaryPrice>₹{plan.price.toFixed(0)}<span style={{ fontSize: 12, fontWeight: 500, color: '#94a3b8' }}> /salon/month</span></PlanSummaryPrice>
+              <div style={{ fontSize: 13, color: '#64748b', marginTop: 2 }}>{plan.tagline}</div>
+              <PlanFeatureList>
+                {plan.features.map((f) => (
+                  <PlanFeatureItem key={f}>
+                    <CheckOutlined />
+                    <span>{f}</span>
+                  </PlanFeatureItem>
+                ))}
+              </PlanFeatureList>
+            </PlanSummary>
+          )}
           <Form id="onboard-salon-form" form={form} layout="vertical" onFinish={onFinish}>
             <SectionLabel>Your details</SectionLabel>
             <Form.Item label="Full name" name="name" rules={[{ required: true, message: 'Full name is required' }]}>
@@ -194,8 +248,8 @@ export const OnboardSalonModal = ({ open, plan, onClose }: OnboardSalonModalProp
             >
               <Input $fullWidth placeholder="you@example.com" />
             </Form.Item>
-            <Form.Item label="Phone" name="phone">
-              <Input $fullWidth placeholder="Phone number (optional)" />
+            <Form.Item label="Phone" name="phone" getValueFromEvent={(e) => e.target.value.replace(/\D/g, '')}>
+              <Input $fullWidth placeholder="Phone number (optional)" inputMode="numeric" maxLength={15} />
             </Form.Item>
             <Form.Item label="Date of birth" name="dateOfBirth" rules={[{ required: true, message: 'Date of birth is required' }]}>
               <DatePicker style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs())} placeholder="Select your date of birth" />
@@ -212,13 +266,15 @@ export const OnboardSalonModal = ({ open, plan, onClose }: OnboardSalonModalProp
               <Input $fullWidth placeholder="Salon address (optional)" />
             </Form.Item>
 
-            <SectionLabel>Government documents</SectionLabel>
+            <SectionLabel>
+              Government documents <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0, color: '#94a3b8' }}>— upload at least one</span>
+            </SectionLabel>
             {DOC_FIELDS.map((f) => (
               <DocRow key={f.key}>
                 <Form.Item label={f.label} name={f.numberField} style={{ marginBottom: 0 }}>
                   <Input $fullWidth placeholder={f.numberPlaceholder} />
                 </Form.Item>
-                <Form.Item label="Document" style={{ marginBottom: 0 }} required>
+                <Form.Item label="Document" style={{ marginBottom: 0 }}>
                   <Upload
                     accept=".jpg,.jpeg,.png,.webp,.pdf"
                     maxCount={1}
